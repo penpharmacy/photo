@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photo Studio & Frame Creator</title>
+    <title>Photo Studio & Photobooth Creator Studio</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -29,155 +29,235 @@
         }
     </script>
     <style>
-        /* Custom scrollbar for better look */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .canvas-container { touch-action: none; }
+        
+        /* Countdown Overlay Animation */
+        @keyframes ping-once {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
         }
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 9999px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
-        }
-        .canvas-container {
-            touch-action: none;
-        }
+        .animate-countdown { animation: ping-once 0.9s ease-out infinite; }
     </style>
 </head>
-<body class="h-full flex flex-col font-prompt overflow-hidden bg-slate-950 text-slate-100">
+<body class="h-full flex flex-col font-prompt overflow-hidden bg-slate-950 text-slate-100 select-none">
 
-    <!-- Header -->
+    <!-- Header Bar -->
     <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between z-20 shrink-0">
         <div class="flex items-center space-x-3">
-            <div class="p-2 bg-gradient-to-tr from-indigo-500 to-pink-500 rounded-xl shadow-lg shadow-indigo-500/30">
-                <i class="fa-solid font-bold fa-camera-retro text-xl text-white"></i>
+            <div class="p-2 bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500 rounded-xl shadow-lg shadow-pink-500/30">
+                <i class="fa-solid fa-camera-retro text-xl text-white"></i>
             </div>
             <div>
-                <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
-                    Photo Studio & Frame
+                <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-400 bg-clip-text text-transparent">
+                    Photobooth & Studio FX
                 </h1>
-                <p class="text-xs text-slate-400">แต่งรูป ถ่ายภาพ ใส่กรอบ & สติกเกอร์</p>
+                <p class="text-xs text-slate-400" data-i18n="subtitle">ถ่ายรูปตู้สติกเกอร์ 3 ช็อต | โหมดขาวดำ/อาร์ต | แต่งกรอบ & สติกเกอร์</p>
             </div>
         </div>
 
+        <!-- Controls: Language, Reset, Download Image & Video -->
         <div class="flex items-center space-x-2">
+            <!-- Language Switcher -->
+            <button id="btnToggleLang" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1">
+                <i class="fa-solid fa-globe text-pink-400"></i>
+                <span id="langLabel">TH / EN</span>
+            </button>
+
             <button id="btnResetCanvas" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-medium transition flex items-center gap-1.5 border border-slate-700">
                 <i class="fa-solid fa-rotate-left"></i>
-                <span class="hidden sm:inline">รีเซ็ต</span>
+                <span class="hidden sm:inline" data-i18n="btnReset">รีเซ็ต</span>
             </button>
+
+            <!-- Video Record Button -->
+            <button id="btnRecordVideo" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-500/25 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-video text-rose-400 animate-pulse"></i>
+                <span id="recBtnText" data-i18n="btnRecord">บันทึกวิดีโอ (5s)</span>
+            </button>
+
+            <!-- Photo Download -->
             <button id="btnDownload" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-pink-500/25 transition flex items-center gap-2">
                 <i class="fa-solid fa-download"></i>
-                <span>ดาวน์โหลด</span>
+                <span data-i18n="btnDownload">ดาวน์โหลด</span>
             </button>
         </div>
     </header>
 
-    <!-- Main Content Grid -->
+    <!-- Main Workspace -->
     <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         
-        <!-- Left/Top: Canvas Interactive Workspace -->
-        <section class="flex-1 bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden select-none">
-            
-            <!-- Canvas Wrapper -->
+        <!-- Interactive Canvas View -->
+        <section class="flex-1 bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
             <div id="canvasWrapper" class="relative max-w-full max-h-full flex items-center justify-center flex-1 w-full h-full">
+                <!-- Canvas Display -->
                 <canvas id="mainCanvas" class="max-w-full max-h-full rounded-xl shadow-2xl border border-slate-800 cursor-crosshair bg-slate-900"></canvas>
+                
+                <!-- Countdown Overlay for Photobooth 3 Action Capture -->
+                <div id="countdownOverlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-30 hidden">
+                    <span id="countdownNumber" class="text-8xl font-black text-pink-500 animate-countdown drop-shadow-[0_0_20px_rgba(236,72,153,0.8)]">3</span>
+                    <p id="countdownStatus" class="mt-4 text-lg font-semibold text-white bg-slate-900/80 px-4 py-1.5 rounded-full border border-pink-500/50">กำลังเตรียมถ่ายรูปที่ 1/3</p>
+                </div>
             </div>
 
-            <!-- Canvas Controls Overlay (Dimensions & Clear Selected) -->
-            <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center pointer-events-none z-10">
+            <!-- Canvas Bottom Floating Bar -->
+            <div class="absolute bottom-4 left-4 right-4 flex flex-wrap justify-between items-center pointer-events-none z-10 gap-2">
                 <div class="pointer-events-auto bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/50 text-xs text-slate-300 flex items-center gap-2 shadow-lg">
                     <i class="fa-solid fa-expand text-slate-400"></i>
-                    <span id="canvasDimText">1080 x 1080 px</span>
+                    <span id="canvasDimText">600 x 1800 px (ตู้สติกเกอร์ 2x6)</span>
                 </div>
 
-                <div id="selectedElementToolbar" class="pointer-events-auto hidden bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-pink-500/40 text-xs text-slate-200 flex items-center gap-3 shadow-xl">
-                    <span class="text-pink-400 font-medium"><i class="fa-solid fa-square-check mr-1"></i>เลือกวัตถุอยู่</span>
-                    <button id="btnDeleteSelected" class="hover:text-red-400 transition text-red-300 flex items-center gap-1 font-semibold">
-                        <i class="fa-solid fa-trash"></i> ลบ
-                    </button>
-                    <button id="btnBringForward" class="hover:text-indigo-400 transition flex items-center gap-1">
-                        <i class="fa-solid fa-layer-group"></i> ย้ายขึ้น
+                <!-- Selected Element Dynamic Control Toolbar -->
+                <div id="selectedElementToolbar" class="pointer-events-auto hidden bg-slate-900/95 backdrop-blur-md px-4 py-2 rounded-2xl border border-pink-500/50 text-xs text-slate-200 flex flex-wrap items-center gap-4 shadow-2xl">
+                    <span class="text-pink-400 font-medium flex items-center gap-1">
+                        <i class="fa-solid fa-shapes"></i>
+                        <span data-i18n="selected">เลือกวัตถุอยู่</span>
+                    </span>
+
+                    <!-- Quick Resize Slider -->
+                    <div class="flex items-center gap-2 border-l border-slate-700 pl-3">
+                        <i class="fa-solid fa-up-right-and-down-left-from-center text-slate-400 text-[10px]"></i>
+                        <span class="text-[11px] text-slate-400" data-i18n="lblScale">ขนาด:</span>
+                        <input id="sliderElementScale" type="range" min="10" max="300" value="100" class="w-20 sm:w-28 accent-pink-500 cursor-pointer">
+                    </div>
+
+                    <!-- Quick Rotate Slider -->
+                    <div class="flex items-center gap-2 border-l border-slate-700 pl-3">
+                        <i class="fa-solid fa-rotate text-slate-400 text-[10px]"></i>
+                        <span class="text-[11px] text-slate-400" data-i18n="lblRotate">หมุน:</span>
+                        <input id="sliderElementRotate" type="range" min="-180" max="180" value="0" class="w-20 sm:w-28 accent-pink-500 cursor-pointer">
+                    </div>
+
+                    <!-- Layer Controls -->
+                    <div class="flex items-center gap-1 border-l border-slate-700 pl-3">
+                        <button id="btnBringForward" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 transition flex items-center gap-1" title="ย้ายขึ้น">
+                            <i class="fa-solid fa-layer-group"></i> <span class="hidden sm:inline" data-i18n="layerUp">ขึ้น</span>
+                        </button>
+                        <button id="btnSendBackward" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 transition flex items-center gap-1" title="ย้ายลง">
+                            <i class="fa-solid fa-layer-group rotate-180"></i> <span class="hidden sm:inline" data-i18n="layerDown">ลง</span>
+                        </button>
+                    </div>
+
+                    <!-- Delete Button -->
+                    <button id="btnDeleteSelected" class="ml-auto hover:text-red-400 transition text-red-400 flex items-center gap-1 font-semibold bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-lg border border-red-500/30">
+                        <i class="fa-solid fa-trash"></i> <span data-i18n="delete">ลบ</span>
                     </button>
                 </div>
             </div>
         </section>
 
-        <!-- Right Sidebar / Bottom Drawer for Mobile -->
+        <!-- Right Side Panel / Control Drawer -->
         <aside class="w-full lg:w-96 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col h-[55vh] lg:h-full shrink-0 z-10">
             
-            <!-- Tab Headers -->
+            <!-- Navigation Tabs Header -->
             <div class="flex border-b border-slate-800 bg-slate-900/50 overflow-x-auto shrink-0 scrollbar-none">
-                <button data-tab="camera" class="tab-btn active flex-1 py-3 px-3 text-xs sm:text-sm font-medium text-pink-400 border-b-2 border-pink-500 flex flex-col items-center gap-1 min-w-[70px]">
+                <button data-tab="camera" class="tab-btn active flex-1 py-2.5 px-2 text-xs font-medium text-pink-400 border-b-2 border-pink-500 flex flex-col items-center gap-1 min-w-[65px]">
                     <i class="fa-solid fa-camera text-base"></i>
-                    <span>กล้อง/รูป</span>
+                    <span data-i18n="tabCamera">ถ่ายรูป/ตู้สติกเกอร์</span>
                 </button>
-                <button data-tab="frames" class="tab-btn flex-1 py-3 px-3 text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[70px]">
+                <button data-tab="art" class="tab-btn flex-1 py-2.5 px-2 text-xs font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[65px]">
+                    <i class="fa-solid fa-palette text-base"></i>
+                    <span data-i18n="tabArt">สไตล์/โทนสี</span>
+                </button>
+                <button data-tab="frames" class="tab-btn flex-1 py-2.5 px-2 text-xs font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[65px]">
                     <i class="fa-solid fa-border-all text-base"></i>
-                    <span>กรอบรูป</span>
+                    <span data-i18n="tabFrames">กรอบ/ธีมตู้</span>
                 </button>
-                <button data-tab="text" class="tab-btn flex-1 py-3 px-3 text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[70px]">
-                    <i class="fa-solid fa-font text-base"></i>
-                    <span>ข้อความ</span>
+                <button data-tab="beauty" class="tab-btn flex-1 py-2.5 px-2 text-xs font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[65px]">
+                    <i class="fa-solid fa-face-smile text-base"></i>
+                    <span data-i18n="tabBeauty">ปรับแต่งใบหน้า</span>
                 </button>
-                <button data-tab="stickers" class="tab-btn flex-1 py-3 px-3 text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[70px]">
+                <button data-tab="stickers" class="tab-btn flex-1 py-2.5 px-2 text-xs font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[65px]">
                     <i class="fa-solid fa-icons text-base"></i>
-                    <span>กราฟิก</span>
+                    <span data-i18n="tabStickers">สติกเกอร์</span>
                 </button>
-                <button data-tab="canvas" class="tab-btn flex-1 py-3 px-3 text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[70px]">
+                <button data-tab="text" class="tab-btn flex-1 py-2.5 px-2 text-xs font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[65px]">
+                    <i class="fa-solid fa-font text-base"></i>
+                    <span data-i18n="tabText">ข้อความ</span>
+                </button>
+                <button data-tab="canvas" class="tab-btn flex-1 py-2.5 px-2 text-xs font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex flex-col items-center gap-1 min-w-[65px]">
                     <i class="fa-solid fa-sliders text-base"></i>
-                    <span>ขนาด/พื้น</span>
+                    <span data-i18n="tabCanvas">ฉาก/ขนาด</span>
                 </button>
             </div>
 
-            <!-- Tab Contents -->
+            <!-- Tab Panels Content -->
             <div class="flex-1 overflow-y-auto p-4 space-y-4">
 
-                <!-- TAB 1: CAMERA & IMAGE UPLOAD -->
+                <!-- TAB 1: CAMERA & PHOTOBOOTH 3-ACTION CAPTURE -->
                 <div id="tab-camera" class="tab-content space-y-4">
                     <div class="space-y-2">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">ถ่ายรูปภาพด้วยกล้อง</label>
-                        
-                        <!-- Camera Viewfinder Container -->
-                        <div class="relative bg-slate-950 rounded-xl border border-slate-800 overflow-hidden aspect-video flex items-center justify-center">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-pink-400 flex items-center gap-1" data-i18n="lblCamera">
+                            <i class="fa-solid fa-camera"></i> กล้องถ่ายรูป & โหมดตู้สติกเกอร์
+                        </label>
+
+                        <!-- Camera Capture Aspect Ratio Options -->
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
+                            <label class="text-[11px] font-medium text-slate-300 flex items-center gap-1">
+                                <i class="fa-solid fa-crop text-pink-400"></i>
+                                <span>สัดส่วนกล้องถ่าย/วิดีโอ (Capture Ratio):</span>
+                            </label>
+                            <div class="grid grid-cols-4 gap-1.5">
+                                <button data-cap-ratio="3:4" class="cap-ratio-btn active bg-pink-950/60 border-2 border-pink-500 text-pink-300 py-1.5 rounded-lg text-xs font-semibold transition text-center">
+                                    3:4
+                                </button>
+                                <button data-cap-ratio="1:1" class="cap-ratio-btn bg-slate-900 border border-slate-700 text-slate-300 py-1.5 rounded-lg text-xs font-semibold hover:border-pink-500 transition text-center">
+                                    1:1
+                                </button>
+                                <button data-cap-ratio="9:16" class="cap-ratio-btn bg-slate-900 border border-slate-700 text-slate-300 py-1.5 rounded-lg text-xs font-semibold hover:border-pink-500 transition text-center">
+                                    9:16
+                                </button>
+                                <button data-cap-ratio="16:9" class="cap-ratio-btn bg-slate-900 border border-slate-700 text-slate-300 py-1.5 rounded-lg text-xs font-semibold hover:border-pink-500 transition text-center">
+                                    16:9
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="cameraContainer" class="relative bg-slate-950 rounded-xl border border-slate-800 overflow-hidden aspect-[3/4] flex items-center justify-center transition-all duration-300">
                             <video id="cameraFeed" class="w-full h-full object-cover hidden" autoplay playsinline></video>
                             <div id="cameraPlaceholder" class="text-center p-4">
                                 <i class="fa-solid fa-video-slash text-3xl text-slate-600 mb-2"></i>
-                                <p class="text-xs text-slate-400">ยังไม่ได้เปิดกล้อง</p>
+                                <p class="text-xs text-slate-400" data-i18n="camOff">ยังไม่ได้เปิดกล้อง</p>
                             </div>
                         </div>
 
                         <div class="flex gap-2">
                             <button id="btnStartCamera" class="flex-1 py-2 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-video"></i>
-                                <span>เปิดกล้อง</span>
-                            </button>
-                            <button id="btnCapture" class="flex-1 py-2 px-3 bg-pink-600 hover:bg-pink-500 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-2 hidden">
-                                <i class="fa-solid fa-circle-dot"></i>
-                                <span>ถ่ายรูป</span>
+                                <span data-i18n="btnStartCam">เปิดกล้อง</span>
                             </button>
                             <button id="btnStopCamera" class="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition hidden">
                                 <i class="fa-solid fa-stop"></i>
                             </button>
                         </div>
+
+                        <!-- 3 Action Photobooth Snap Trigger -->
+                        <button id="btnSnap3Actions" class="w-full py-2.5 px-4 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:from-pink-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-pink-500/20 transition flex items-center justify-center gap-2 border border-pink-400/30 hidden">
+                            <i class="fa-solid fa-wand-magic-sparkles text-amber-300 text-sm animate-bounce"></i>
+                            <span data-i18n="btnSnap3">ถ่าย 3 Action อัตโนมัติ (นับถอยหลัง)</span>
+                        </button>
+
+                        <button id="btnCapture" class="w-full py-2 px-3 bg-pink-600 hover:bg-pink-500 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-2 hidden">
+                            <i class="fa-solid fa-circle-dot"></i>
+                            <span data-i18n="btnSnap">ถ่ายรูปเดี่ยว (1 ภาพ)</span>
+                        </button>
                     </div>
 
-                    <div class="relative flex py-2 items-center">
+                    <div class="relative flex py-1 items-center">
                         <div class="flex-grow border-t border-slate-800"></div>
-                        <span class="flex-shrink mx-3 text-xs text-slate-500">หรือ</span>
+                        <span class="flex-shrink mx-3 text-xs text-slate-500" data-i18n="or">หรือ</span>
                         <div class="flex-grow border-t border-slate-800"></div>
                     </div>
 
                     <div class="space-y-2">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">อัปโหลดรูปภาพ</label>
-                        <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-slate-800 border-dashed rounded-xl cursor-pointer bg-slate-950 hover:bg-slate-800/50 transition">
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                <i class="fa-solid fa-cloud-arrow-up text-2xl text-pink-400 mb-1"></i>
-                                <p class="text-xs text-slate-300 font-medium">คลิกเพื่ออัปโหลดรูปภาพ</p>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblUpload">อัปโหลดรูปภาพของคุณเอง</label>
+                        <label class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-800 border-dashed rounded-xl cursor-pointer bg-slate-950 hover:bg-slate-800/50 transition">
+                            <div class="flex flex-col items-center justify-center pt-3 pb-3">
+                                <i class="fa-solid fa-cloud-arrow-up text-xl text-pink-400 mb-1"></i>
+                                <p class="text-xs text-slate-300 font-medium" data-i18n="clickUpload">คลิกอัปโหลดรูปภาพ</p>
                                 <p class="text-[10px] text-slate-500">PNG, JPG, WEBP</p>
                             </div>
                             <input id="fileInput" type="file" accept="image/*" class="hidden" />
@@ -185,156 +265,229 @@
                     </div>
                 </div>
 
-                <!-- TAB 2: FRAMES -->
-                <div id="tab-frames" class="tab-content space-y-4 hidden">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">เลือกกรอบรูปตกแต่ง</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button class="frame-option border-2 border-pink-500/50 rounded-xl p-3 bg-slate-950 hover:bg-slate-800 text-left transition flex flex-col items-center gap-2 group" data-frame="none">
-                            <div class="w-full h-16 bg-slate-900 rounded border border-slate-700 flex items-center justify-center">
-                                <i class="fa-solid fa-ban text-slate-500"></i>
-                            </div>
-                            <span class="text-xs font-medium text-slate-300 group-hover:text-pink-400">ไม่มีกรอบ</span>
-                        </button>
-                        
-                        <button class="frame-option border-2 border-slate-800 rounded-xl p-3 bg-slate-950 hover:bg-slate-800 text-left transition flex flex-col items-center gap-2 group" data-frame="classic">
-                            <div class="w-full h-16 bg-slate-900 rounded border-8 border-slate-200 flex items-center justify-center">
-                                <div class="w-full h-full border-2 border-amber-600"></div>
-                            </div>
-                            <span class="text-xs font-medium text-slate-300 group-hover:text-pink-400">คลาสสิก หรูหรา</span>
-                        </button>
+                <!-- TAB 2: ART FILTERS & COLOR STYLES -->
+                <div id="tab-art" class="tab-content space-y-4 hidden">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblArtTitle">โหมดสไตล์ภาพ & โทนสีภาพถ่าย</label>
 
-                        <button class="frame-option border-2 border-slate-800 rounded-xl p-3 bg-slate-950 hover:bg-slate-800 text-left transition flex flex-col items-center gap-2 group" data-frame="polaroid">
-                            <div class="w-full h-16 bg-white rounded p-1 pb-4 flex items-center justify-center">
-                                <div class="w-full h-full bg-slate-700 rounded-sm"></div>
-                            </div>
-                            <span class="text-xs font-medium text-slate-300 group-hover:text-pink-400">โพลารอยด์</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="art-filter-btn active border-2 border-pink-500 rounded-xl p-2.5 bg-slate-950 hover:bg-slate-800 text-xs text-left transition flex items-center gap-2" data-art="normal">
+                            <i class="fa-solid fa-image text-slate-400"></i>
+                            <span data-i18n="filterNormal">ปกติ (Original)</span>
                         </button>
+                        <button class="art-filter-btn border-2 border-slate-800 rounded-xl p-2.5 bg-slate-950 hover:bg-slate-800 text-xs text-left transition flex items-center gap-2" data-art="bw">
+                            <i class="fa-solid fa-circle-half-stroke text-slate-200"></i>
+                            <span data-i18n="filterBW">ขาวดำ (B&W Classic)</span>
+                        </button>
+                        <button class="art-filter-btn border-2 border-slate-800 rounded-xl p-2.5 bg-slate-950 hover:bg-slate-800 text-xs text-left transition flex items-center gap-2" data-art="popart">
+                            <i class="fa-solid fa-palette text-pink-400"></i>
+                            <span data-i18n="filterPopArt">ป๊อปอาร์ต (Pop Art)</span>
+                        </button>
+                        <button class="art-filter-btn border-2 border-slate-800 rounded-xl p-2.5 bg-slate-950 hover:bg-slate-800 text-xs text-left transition flex items-center gap-2" data-art="cartoon">
+                            <i class="fa-solid fa-paint-brush text-yellow-400"></i>
+                            <span data-i18n="filterCartoon">การ์ตูน (Comic)</span>
+                        </button>
+                        <button class="art-filter-btn border-2 border-slate-800 rounded-xl p-2.5 bg-slate-950 hover:bg-slate-800 text-xs text-left transition flex items-center gap-2" data-art="sticker">
+                            <i class="fa-solid fa-note-sticky text-pink-400"></i>
+                            <span data-i18n="filterSticker">สติกเกอร์ตัดขอบ</span>
+                        </button>
+                        <button class="art-filter-btn border-2 border-slate-800 rounded-xl p-2.5 bg-slate-950 hover:bg-slate-800 text-xs text-left transition flex items-center gap-2" data-art="cyberpunk">
+                            <i class="fa-solid fa-bolt text-cyan-400"></i>
+                            <span>Cyberpunk Neon</span>
+                        </button>
+                    </div>
 
-                        <button class="frame-option border-2 border-slate-800 rounded-xl p-3 bg-slate-950 hover:bg-slate-800 text-left transition flex flex-col items-center gap-2 group" data-frame="neon">
-                            <div class="w-full h-16 bg-slate-950 rounded border-2 border-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.8)] flex items-center justify-center">
-                                <div class="w-full h-full border border-cyan-400"></div>
-                            </div>
-                            <span class="text-xs font-medium text-slate-300 group-hover:text-pink-400">นีออน (Neon)</span>
-                        </button>
-
-                        <button class="frame-option border-2 border-slate-800 rounded-xl p-3 bg-slate-950 hover:bg-slate-800 text-left transition flex flex-col items-center gap-2 group" data-frame="cute">
-                            <div class="w-full h-16 bg-slate-900 rounded border-4 border-dashed border-pink-300 flex items-center justify-center">
-                                <i class="fa-solid fa-heart text-pink-400 text-xs"></i>
-                            </div>
-                            <span class="text-xs font-medium text-slate-300 group-hover:text-pink-400">น่ารัก/พาสเทล</span>
-                        </button>
-
-                        <button class="frame-option border-2 border-slate-800 rounded-xl p-3 bg-slate-950 hover:bg-slate-800 text-left transition flex flex-col items-center gap-2 group" data-frame="vignette">
-                            <div class="w-full h-16 bg-slate-900 rounded radial-vignette flex items-center justify-center border border-slate-700">
-                                <span class="text-[10px] text-slate-400">เงาดำ</span>
-                            </div>
-                            <span class="text-xs font-medium text-slate-300 group-hover:text-pink-400">เงาขอบภาพ</span>
-                        </button>
+                    <div class="p-3 bg-indigo-950/40 border border-indigo-800/50 rounded-xl text-xs text-indigo-200 space-y-1">
+                        <p class="font-semibold"><i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i><span data-i18n="tipFilterTitle">ข้อแนะนำสไตล์:</span></p>
+                        <p class="text-[11px] text-indigo-300" data-i18n="tipFilterDesc">สามารถเลือกลักษณะโทนภาพก่อนกดปุ่มถ่าย 3 Action เพื่อให้ทุกรูปถ่ายได้สไตล์และอารมณ์ตรงใจ!</p>
                     </div>
                 </div>
 
-                <!-- TAB 3: TEXT -->
+                <!-- TAB 3: PHOTOBOOTH THEMES & FRAMES -->
+                <div id="tab-frames" class="tab-content space-y-4 hidden">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblFramesTitle">เลือกธีมตู้สติกเกอร์ & กรอบรูป</label>
+                    
+                    <!-- Theme Selector for Photobooth Strip -->
+                    <div class="space-y-2">
+                        <label class="text-[11px] text-slate-400" data-i18n="lblStripTheme">ธีมสีตู้ถ่ายรูปสติกเกอร์ (Strip Theme):</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="theme-option active border-2 border-pink-500 rounded-lg p-2 bg-pink-950/40 text-xs text-left flex items-center gap-2" data-theme="pastel">
+                                <span class="w-4 h-4 rounded-full bg-pink-300 border border-white shrink-0"></span>
+                                <span>Cute Pastel Pink</span>
+                            </button>
+                            <button class="theme-option border-2 border-slate-800 rounded-lg p-2 bg-slate-950 text-xs text-left flex items-center gap-2" data-theme="dark">
+                                <span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-600 shrink-0"></span>
+                                <span>Dark Minimal</span>
+                            </button>
+                            <button class="theme-option border-2 border-slate-800 rounded-lg p-2 bg-slate-950 text-xs text-left flex items-center gap-2" data-theme="neon">
+                                <span class="w-4 h-4 rounded-full bg-cyan-400 border border-pink-500 shrink-0"></span>
+                                <span>Cyber Neon</span>
+                            </button>
+                            <button class="theme-option border-2 border-slate-800 rounded-lg p-2 bg-slate-950 text-xs text-left flex items-center gap-2" data-theme="retro">
+                                <span class="w-4 h-4 rounded-full bg-amber-200 border border-amber-600 shrink-0"></span>
+                                <span>Vintage Y2K</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 border-t border-slate-800 pt-3">
+                        <label class="text-[11px] text-slate-400" data-i18n="lblOuterFrame">กรอบรูปขอบนอก:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="frame-option border-2 border-pink-500 rounded-xl p-2 bg-slate-950 hover:bg-slate-800 text-xs transition flex items-center gap-2" data-frame="none">
+                                <i class="fa-solid fa-ban text-slate-500"></i>
+                                <span data-i18n="frameNone">ไม่มีกรอบพิเศษ</span>
+                            </button>
+                            <button class="frame-option border-2 border-slate-800 rounded-xl p-2 bg-slate-950 hover:bg-slate-800 text-xs transition flex items-center gap-2" data-frame="classic">
+                                <i class="fa-solid fa-square-full text-amber-500"></i>
+                                <span data-i18n="frameClassic">ขอบทองคลาสสิก</span>
+                            </button>
+                            <button class="frame-option border-2 border-slate-800 rounded-xl p-2 bg-slate-950 hover:bg-slate-800 text-xs transition flex items-center gap-2" data-frame="neon">
+                                <i class="fa-solid fa-bolt text-pink-400"></i>
+                                <span data-i18n="frameNeon">ขอบนีออนเคลื่อนไหว</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom PNG Frame Upload -->
+                    <div class="pt-2 border-t border-slate-800 space-y-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblUploadCustomFrame">อัปโหลดกรอบรูป PNG ใสเอง</label>
+                        <input id="frameFileInput" type="file" accept="image/png" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-pink-400 hover:file:bg-slate-700 cursor-pointer"/>
+                    </div>
+                </div>
+
+                <!-- TAB 4: BEAUTY & FACE ADJUSTMENTS -->
+                <div id="tab-beauty" class="tab-content space-y-4 hidden">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblBeautyTitle">ปรับแต่งใบหน้า & แสงสี</label>
+                    
+                    <!-- Beauty Smooth Slider -->
+                    <div class="space-y-1 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-xs text-slate-300">
+                            <span><i class="fa-solid fa-wand-magic text-pink-400 mr-1.5"></i><span data-i18n="smoothSkin">ปรับผิวเนียน (Smooth Skin)</span></span>
+                            <span id="valSkinSmooth">0%</span>
+                        </div>
+                        <input id="sliderSkinSmooth" type="range" min="0" max="100" value="0" class="w-full accent-pink-500">
+                    </div>
+
+                    <!-- Brightness -->
+                    <div class="space-y-1 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-xs text-slate-300">
+                            <span><i class="fa-solid fa-sun text-amber-400 mr-1.5"></i><span data-i18n="brightness">ความสว่าง (Brightness)</span></span>
+                            <span id="valBrightness">100%</span>
+                        </div>
+                        <input id="sliderBrightness" type="range" min="50" max="150" value="100" class="w-full accent-amber-500">
+                    </div>
+
+                    <!-- Contrast -->
+                    <div class="space-y-1 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-xs text-slate-300">
+                            <span><i class="fa-solid fa-circle-half-stroke text-indigo-400 mr-1.5"></i><span data-i18n="contrast">ความเข้มภาพ (Contrast)</span></span>
+                            <span id="valContrast">100%</span>
+                        </div>
+                        <input id="sliderContrast" type="range" min="50" max="150" value="100" class="w-full accent-indigo-500">
+                    </div>
+
+                    <!-- Saturation -->
+                    <div class="space-y-1 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-xs text-slate-300">
+                            <span><i class="fa-solid fa-droplet text-rose-400 mr-1.5"></i><span data-i18n="saturation">ความสดสี (Saturation)</span></span>
+                            <span id="valSaturation">100%</span>
+                        </div>
+                        <input id="sliderSaturation" type="range" min="0" max="200" value="100" class="w-full accent-rose-500">
+                    </div>
+                </div>
+
+                <!-- TAB 5: GRAPHICS, STICKERS & ONLINE LIBRARY -->
+                <div id="tab-stickers" class="tab-content space-y-4 hidden">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblStickerTitle">สติกเกอร์ / อีโมจิ ตกแต่งภาพถ่าย</label>
+                    <div class="grid grid-cols-5 gap-2 text-2xl">
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="❤️">❤️</button>
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="✨">✨</button>
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="🔥">🔥</button>
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="👑">👑</button>
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="🎉">🎉</button>
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="🌸">🌸</button>
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="🎀">🎀</button>
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="⭐">⭐</button>
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="😎">😎</button>
+                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center border border-slate-800 hover:border-pink-500" data-emoji="🐱">🐱</button>
+                    </div>
+
+                    <!-- Preset Quick Graphic SVG Badges -->
+                    <div class="pt-2 border-t border-slate-800 space-y-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblQuickGfx">กราฟิกประดับด่วน</label>
+                        <div class="flex gap-2 pt-1 overflow-x-auto text-xs">
+                            <button class="preset-gfx-btn px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg shrink-0 flex items-center gap-1.5" data-type="cat">🐱 น้องแมว</button>
+                            <button class="preset-gfx-btn px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg shrink-0 flex items-center gap-1.5" data-type="glasses">🕶️ แว่นเท่ๆ</button>
+                            <button class="preset-gfx-btn px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg shrink-0 flex items-center gap-1.5" data-type="sparkles">✨ ประกายดาว</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 6: TEXT -->
                 <div id="tab-text" class="tab-content space-y-4 hidden">
                     <div class="space-y-3">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">เพิ่มข้อความ</label>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblAddText">เพิ่มข้อความประดับภาพ</label>
                         <div class="flex gap-2">
-                            <input id="textInput" type="text" placeholder="พิมพ์ข้อความที่นี่..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-pink-500">
-                            <button id="btnAddText" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-lg text-sm font-semibold transition">
+                            <input id="textInput" type="text" placeholder="พิมพ์ข้อความ เช่น PHOTO BOOTH..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-pink-500">
+                            <button id="btnAddText" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-lg text-sm font-semibold transition" data-i18n="btnAdd">
                                 เพิ่ม
                             </button>
                         </div>
                     </div>
 
                     <div class="space-y-3 pt-2 border-t border-slate-800">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">รูปแบบฟอนต์</label>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblFont">รูปแบบฟอนต์</label>
                         <select id="fontFamilySelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-pink-500">
-                            <option value="Prompt" class="font-prompt">Prompt (ทางการ/ทันสมัย)</option>
+                            <option value="Prompt" class="font-prompt">Prompt (ทันสมัย/อ่านง่าย)</option>
                             <option value="Itim" class="font-itim">Itim (น่ารัก/กันเอง)</option>
                             <option value="Sriracha" class="font-sriracha">Sriracha (ลายมือเขียน)</option>
-                            <option value="Mitr" class="font-mitr">Mitr (หัวกลมอ่านง่าย)</option>
+                            <option value="Mitr" class="font-mitr">Mitr (หัวกลม)</option>
                             <option value="Chakra Petch" class="font-chakra">Chakra Petch (เทค/ดิจิทัล)</option>
                         </select>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3 pt-2">
                         <div>
-                            <label class="text-xs text-slate-400 mb-1 block">สีข้อความ</label>
+                            <label class="text-xs text-slate-400 mb-1 block" data-i18n="lblTextColor">สีข้อความ</label>
                             <input id="textColorInput" type="color" value="#ffffff" class="w-full h-10 bg-slate-950 border border-slate-700 rounded-lg cursor-pointer p-1">
                         </div>
                         <div>
-                            <label class="text-xs text-slate-400 mb-1 block">สีเส้นขอบ (Stroke)</label>
+                            <label class="text-xs text-slate-400 mb-1 block" data-i18n="lblStrokeColor">สีเส้นขอบ</label>
                             <input id="textStrokeColorInput" type="color" value="#000000" class="w-full h-10 bg-slate-950 border border-slate-700 rounded-lg cursor-pointer p-1">
                         </div>
                     </div>
-
-                    <div class="space-y-2 pt-2">
-                        <div class="flex justify-between text-xs text-slate-400">
-                            <span>ขนาดข้อความ</span>
-                            <span id="textSizeVal">40px</span>
-                        </div>
-                        <input id="textSizeInput" type="range" min="16" max="120" value="40" class="w-full accent-pink-500">
-                    </div>
                 </div>
 
-                <!-- TAB 4: STICKERS & GRAPHICS -->
-                <div id="tab-stickers" class="tab-content space-y-4 hidden">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">เลือกสติกเกอร์ / อีโมจิ</label>
-                    
-                    <div class="grid grid-cols-5 gap-2 text-2xl">
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="❤️">❤️</button>
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="✨">✨</button>
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="🔥">🔥</button>
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="👑">👑</button>
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="🎉">🎉</button>
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="🌸">🌸</button>
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="🎀">🎀</button>
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="⭐">⭐</button>
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="😎">😎</button>
-                        <button class="sticker-btn bg-slate-950 hover:bg-slate-800 p-2 rounded-xl text-center transition border border-slate-800 hover:border-pink-500" data-emoji="🐱">🐱</button>
-                    </div>
-
-                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 block pt-2">รูปทรงเรขาคณิต</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button id="btnAddShapeCircle" class="py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-pink-500 rounded-xl flex flex-col items-center justify-center gap-1 transition">
-                            <div class="w-5 h-5 rounded-full bg-pink-500"></div>
-                            <span class="text-[10px] text-slate-300">วงกลม</span>
-                        </button>
-                        <button id="btnAddShapeRect" class="py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-pink-500 rounded-xl flex flex-col items-center justify-center gap-1 transition">
-                            <div class="w-5 h-5 bg-indigo-500 rounded-sm"></div>
-                            <span class="text-[10px] text-slate-300">สี่เหลี่ยม</span>
-                        </button>
-                        <button id="btnAddShapeStar" class="py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-pink-500 rounded-xl flex flex-col items-center justify-center gap-1 transition">
-                            <i class="fa-solid fa-star text-amber-400 text-lg"></i>
-                            <span class="text-[10px] text-slate-300">ดาว</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- TAB 5: CANVAS & BACKGROUND -->
+                <!-- TAB 7: CANVAS, ASPECT RATIO & BACKGROUND -->
                 <div id="tab-canvas" class="tab-content space-y-4 hidden">
                     <div class="space-y-3">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">อัตราส่วนภาพ (Aspect Ratio)</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button data-ratio="1:1" class="ratio-btn bg-slate-950 border border-pink-500 text-pink-400 py-2 rounded-lg text-xs font-medium flex flex-col items-center justify-center gap-1">
-                                <span class="font-bold">1:1</span>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-pink-400 flex items-center gap-1" data-i18n="lblRatio">
+                            <i class="fa-solid fa-crop"></i> เลือกขนาดภาพถ่าย (Aspect Ratio)
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button data-ratio="2:6" class="ratio-btn active bg-slate-950 border-2 border-pink-500 text-pink-400 py-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-0.5">
+                                <span class="font-bold text-sm">2:6 Photo Strip</span>
+                                <span class="text-[10px] text-slate-400" data-i18n="ratio26">ตู้สติกเกอร์ 3 Action</span>
+                            </button>
+                            <button data-ratio="1:1" class="ratio-btn bg-slate-950 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-0.5">
+                                <span class="font-bold text-sm">1:1 Square</span>
                                 <span class="text-[10px] text-slate-400">จัตุรัส</span>
                             </button>
-                            <button data-ratio="4:3" class="ratio-btn bg-slate-950 border border-slate-800 text-slate-300 py-2 rounded-lg text-xs font-medium flex flex-col items-center justify-center gap-1">
-                                <span class="font-bold">4:3</span>
+                            <button data-ratio="4:3" class="ratio-btn bg-slate-950 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-0.5">
+                                <span class="font-bold text-sm">4:3 Standard</span>
                                 <span class="text-[10px] text-slate-400">มาตรฐาน</span>
                             </button>
-                            <button data-ratio="9:16" class="ratio-btn bg-slate-950 border border-slate-800 text-slate-300 py-2 rounded-lg text-xs font-medium flex flex-col items-center justify-center gap-1">
-                                <span class="font-bold">9:16</span>
-                                <span class="text-[10px] text-slate-400">สตอรี่</span>
+                            <button data-ratio="9:16" class="ratio-btn bg-slate-950 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-0.5">
+                                <span class="font-bold text-sm">9:16 Story</span>
+                                <span class="text-[10px] text-slate-400">สตอรี่/แนวตั้ง</span>
                             </button>
                         </div>
                     </div>
 
                     <div class="space-y-3 pt-2 border-t border-slate-800">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">สีพื้นหลัง Canvas</label>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400" data-i18n="lblBgColor">สีฉากหลังพื้นหลัง</label>
                         <div class="flex items-center gap-3">
                             <input id="bgColorInput" type="color" value="#0f172a" class="w-12 h-10 bg-slate-950 border border-slate-700 rounded-lg cursor-pointer p-1">
-                            <span class="text-xs text-slate-300">เปลี่ยนสีฉากหลังกรณีไม่มีรูปถ่าย</span>
+                            <span class="text-xs text-slate-300" data-i18n="bgDesc">เปลี่ยนสีฉากหลังภาพถ่าย</span>
                         </div>
                     </div>
                 </div>
@@ -345,7 +498,129 @@
     </main>
 
     <script>
-        // DOM Elements
+        // Language i18n Dictionary
+        const i18n = {
+            th: {
+                subtitle: "ถ่ายรูปตู้สติกเกอร์ 3 ช็อต | โหมดขาวดำ/อาร์ต | แต่งกรอบ & สติกเกอร์",
+                btnReset: "รีเซ็ต",
+                btnRecord: "บันทึกวิดีโอ (5s)",
+                btnDownload: "ดาวน์โหลด",
+                selected: "เลือกวัตถุอยู่",
+                delete: "ลบ",
+                layerUp: "ย้ายขึ้น",
+                layerDown: "ย้ายลง",
+                lblScale: "ขนาด:",
+                lblRotate: "หมุน:",
+                tabCamera: "ถ่ายรูป/ตู้สติกเกอร์",
+                tabArt: "สไตล์/โทนสี",
+                tabFrames: "กรอบ/ธีมตู้",
+                tabBeauty: "ปรับแต่งใบหน้า",
+                tabStickers: "สติกเกอร์",
+                tabText: "ข้อความ",
+                tabCanvas: "ฉาก/ขนาด",
+                lblCamera: "กล้องถ่ายรูป & โหมดตู้สติกเกอร์",
+                camOff: "ยังไม่ได้เปิดกล้อง",
+                btnStartCam: "เปิดกล้อง",
+                btnSnap: "ถ่ายรูปเดี่ยว (1 ภาพ)",
+                btnSnap3: "ถ่าย 3 Action อัตโนมัติ (นับถอยหลัง)",
+                or: "หรือ",
+                lblUpload: "อัปโหลดรูปภาพของคุณเอง",
+                clickUpload: "คลิกอัปโหลดรูปภาพ",
+                lblBeautyTitle: "ปรับแต่งใบหน้า & แสงสี",
+                smoothSkin: "ปรับผิวเนียน (Smooth Skin)",
+                brightness: "ความสว่าง (Brightness)",
+                contrast: "ความเข้มภาพ (Contrast)",
+                saturation: "ความสดสี (Saturation)",
+                lblArtTitle: "โหมดสไตล์ภาพ & โทนสีภาพถ่าย",
+                filterNormal: "ปกติ (Original)",
+                filterBW: "ขาวดำ (B&W Classic)",
+                filterPopArt: "ป๊อปอาร์ต (Pop Art)",
+                filterCartoon: "การ์ตูน (Comic)",
+                filterSticker: "สติกเกอร์ตัดขอบ",
+                tipFilterTitle: "ข้อแนะนำสไตล์:",
+                tipFilterDesc: "สามารถเลือกลักษณะโทนภาพก่อนกดปุ่มถ่าย 3 Action เพื่อให้ทุกรูปถ่ายได้สไตล์และอารมณ์ตรงใจ!",
+                lblFramesTitle: "เลือกธีมตู้สติกเกอร์ & กรอบรูป",
+                lblStripTheme: "ธีมสีตู้ถ่ายรูปสติกเกอร์ (Strip Theme):",
+                lblOuterFrame: "กรอบรูปขอบนอก:",
+                frameNone: "ไม่มีกรอบพิเศษ",
+                frameClassic: "ขอบทองคลาสสิก",
+                frameNeon: "ขอบนีออนเคลื่อนไหว",
+                lblUploadCustomFrame: "อัปโหลดกรอบรูป PNG ใสเอง",
+                lblStickerTitle: "สติกเกอร์ / อีโมจิ ตกแต่งภาพถ่าย",
+                lblQuickGfx: "กราฟิกประดับด่วน",
+                lblAddText: "เพิ่มข้อความประดับภาพ",
+                btnAdd: "เพิ่ม",
+                lblFont: "รูปแบบฟอนต์",
+                lblTextColor: "สีข้อความ",
+                lblStrokeColor: "สีเส้นขอบ",
+                lblRatio: "เลือกขนาดภาพถ่าย (Aspect Ratio)",
+                ratio26: "ตู้สติกเกอร์ 3 Action",
+                lblBgColor: "สีฉากหลังพื้นหลัง",
+                bgDesc: "เปลี่ยนสีฉากหลังภาพถ่าย"
+            },
+            en: {
+                subtitle: "Photobooth 3 Action | B&W / Art Style | Sticker Frames",
+                btnReset: "Reset",
+                btnRecord: "Record Video (5s)",
+                btnDownload: "Download",
+                selected: "Element Selected",
+                delete: "Delete",
+                layerUp: "Bring Up",
+                layerDown: "Send Down",
+                lblScale: "Scale:",
+                lblRotate: "Rotate:",
+                tabCamera: "Camera/Booth",
+                tabArt: "Art Style",
+                tabFrames: "Frames/Themes",
+                tabBeauty: "Beauty Tune",
+                tabStickers: "Stickers",
+                tabText: "Text Overlay",
+                tabCanvas: "Canvas Size",
+                lblCamera: "Camera & Photobooth Studio",
+                camOff: "Camera is Turned Off",
+                btnStartCam: "Start Camera",
+                btnSnap: "Single Snap (1 Photo)",
+                btnSnap3: "Auto 3-Action Photobooth Snap",
+                or: "OR",
+                lblUpload: "Upload Your Own Image",
+                clickUpload: "Click to upload photo",
+                lblBeautyTitle: "Face & Lighting Adjustments",
+                smoothSkin: "Smooth Skin Effect",
+                brightness: "Brightness",
+                contrast: "Contrast",
+                saturation: "Saturation",
+                lblArtTitle: "Art Modes & Color Filters",
+                filterNormal: "Original Normal",
+                filterBW: "B&W Monochrome",
+                filterPopArt: "Pop Art Synth",
+                filterCartoon: "Comic / Cartoon",
+                filterSticker: "Sticker Cutout",
+                tipFilterTitle: "Style Tip:",
+                tipFilterDesc: "Pick your filter before starting 3-Action capture to apply the style across all shots!",
+                lblFramesTitle: "Photobooth Themes & Frames",
+                lblStripTheme: "Photobooth Strip Theme Color:",
+                lblOuterFrame: "Outer Frame Overlay:",
+                frameNone: "No Extra Frame",
+                frameClassic: "Gold Classic",
+                frameNeon: "Animated Neon",
+                lblUploadCustomFrame: "Upload Custom Transparent PNG Frame",
+                lblStickerTitle: "Stickers & Emojis",
+                lblQuickGfx: "Quick Graphics",
+                lblAddText: "Add Text Overlay",
+                btnAdd: "Add",
+                lblFont: "Font Family",
+                lblTextColor: "Text Color",
+                lblStrokeColor: "Stroke Color",
+                lblRatio: "Photo Aspect Ratio",
+                ratio26: "3-Action Photobooth 2x6",
+                lblBgColor: "Canvas Background Color",
+                bgDesc: "Change canvas background"
+            }
+        };
+
+        let currentLang = 'th';
+
+        // DOM Handles
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         const canvasDimText = document.getElementById('canvasDimText');
@@ -353,51 +628,145 @@
         const cameraPlaceholder = document.getElementById('cameraPlaceholder');
         const btnStartCamera = document.getElementById('btnStartCamera');
         const btnCapture = document.getElementById('btnCapture');
+        const btnSnap3Actions = document.getElementById('btnSnap3Actions');
         const btnStopCamera = document.getElementById('btnStopCamera');
         const fileInput = document.getElementById('fileInput');
+        const frameFileInput = document.getElementById('frameFileInput');
         const selectedElementToolbar = document.getElementById('selectedElementToolbar');
-        const btnDeleteSelected = document.getElementById('btnDeleteSelected');
-        const btnBringForward = document.getElementById('btnBringForward');
-        
-        // Canvas State Variables
-        let canvasWidth = 1080;
-        let canvasHeight = 1080;
-        let bgImage = null;
+        const sliderElementScale = document.getElementById('sliderElementScale');
+        const sliderElementRotate = document.getElementById('sliderElementRotate');
+        const countdownOverlay = document.getElementById('countdownOverlay');
+        const countdownNumber = document.getElementById('countdownNumber');
+        const countdownStatus = document.getElementById('countdownStatus');
+
+        // Canvas State & Photobooth Setup
+        let currentRatio = '2:6'; // Default to 2x6 Photobooth Strip
+        let canvasWidth = 600;
+        let canvasHeight = 1800;
+
+        let bgImage = null; // Single uploaded/captured photo
+        let photoboothShots = []; // Array of 3 photos for 2x6 Photobooth
+        let stripTheme = 'pastel'; // 'pastel', 'dark', 'neon', 'retro'
+
+        let customFrameImage = null;
         let selectedFrame = 'none';
+        let selectedArtFilter = 'normal'; // 'normal', 'bw', 'popart', 'cartoon', 'sticker', 'cyberpunk'
         let backgroundColor = '#0f172a';
-        
-        // Interactive Elements Layer State
+
+        // Adjustments
+        let skinSmoothVal = 0;
+        let brightnessVal = 100;
+        let contrastVal = 100;
+        let saturationVal = 100;
+
+        // Interactive Elements Array
         let elements = [];
         let activeElementIndex = -1;
-        let isDragging = false;
-        let isResizing = false;
-        let dragStartX = 0;
-        let dragStartY = 0;
+        let isDragging = false, isResizing = false, isRotating = false;
+        let dragStartX = 0, dragStartY = 0;
         let mediaStream = null;
+        let animFrameId = null;
+        let animTime = 0;
 
-        // Initialize Canvas Setup
+        let captureAspectRatio = '3:4'; // '3:4', '1:1', '9:16', '16:9'
+
+        // Setup Aspect Ratio Switcher for Live Camera Feed
+        document.querySelectorAll('.cap-ratio-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cap-ratio-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-pink-950/60', 'border-pink-500', 'border-2', 'text-pink-300');
+                    b.classList.add('bg-slate-900', 'border-slate-700', 'border', 'text-slate-300');
+                });
+                btn.classList.add('active', 'bg-pink-950/60', 'border-pink-500', 'border-2', 'text-pink-300');
+                btn.classList.remove('bg-slate-900', 'border-slate-700', 'border', 'text-slate-300');
+
+                captureAspectRatio = btn.getAttribute('data-cap-ratio');
+                updateCameraViewAspect();
+            });
+        });
+
+        function updateCameraViewAspect() {
+            const container = document.getElementById('cameraContainer');
+            container.className = 'relative bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center transition-all duration-300 ';
+            
+            if (captureAspectRatio === '3:4') container.classList.add('aspect-[3/4]');
+            else if (captureAspectRatio === '1:1') container.classList.add('aspect-square');
+            else if (captureAspectRatio === '9:16') container.classList.add('aspect-[9/16]');
+            else if (captureAspectRatio === '16:9') container.classList.add('aspect-video');
+        }
+
+        // Init Setup
         function initCanvas() {
             canvas.width = canvasWidth;
             canvas.height = canvasHeight;
-            canvasDimText.textContent = `${canvasWidth} x ${canvasHeight} px`;
-            renderCanvas();
+            
+            if (currentRatio === '2:6') {
+                canvasDimText.textContent = `${canvasWidth} x ${canvasHeight} px (ตู้สติกเกอร์ 2x6 นิ้ว)`;
+            } else {
+                canvasDimText.textContent = `${canvasWidth} x ${canvasHeight} px`;
+            }
+
+            if(!animFrameId) startAnimationLoop();
         }
 
-        // Main Canvas Render Loop
+        // Language Switcher
+        document.getElementById('btnToggleLang').addEventListener('click', () => {
+            currentLang = currentLang === 'th' ? 'en' : 'th';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[currentLang][key]) {
+                    el.textContent = i18n[currentLang][key];
+                }
+            });
+        });
+
+        // Animation Loop for Canvas Effects
+        function startAnimationLoop() {
+            animTime += 0.05;
+            renderCanvas();
+            animFrameId = requestAnimationFrame(startAnimationLoop);
+        }
+
+        // Toolbar State Sync
+        function updateToolbarState() {
+            if (activeElementIndex >= 0 && activeElementIndex < elements.length) {
+                const el = elements[activeElementIndex];
+                selectedElementToolbar.classList.remove('hidden');
+
+                let scaleVal = 100;
+                if (el.type === 'text') scaleVal = (el.fontSize / 45) * 100;
+                else if (el.type === 'emoji') scaleVal = (el.size / 80) * 100;
+                else if (el.type === 'image') scaleVal = (el.width / (el.baseWidth || 120)) * 100;
+
+                sliderElementScale.value = Math.min(300, Math.max(10, scaleVal));
+                sliderElementRotate.value = el.rotation || 0;
+            } else {
+                selectedElementToolbar.classList.add('hidden');
+            }
+        }
+
+        // Main Rendering Pipeline
         function renderCanvas() {
-            // Clear Background
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Fill Canvas Base BG
             ctx.fillStyle = backgroundColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Background Photo if existing
-            if (bgImage) {
-                drawCoverImage(bgImage);
+            // 2. Render content based on layout mode
+            if (currentRatio === '2:6') {
+                renderPhotoboothStrip();
+            } else {
+                // Single Image Mode
+                if (bgImage) {
+                    drawProcessedImageToRect(bgImage, 0, 0, canvas.width, canvas.height);
+                }
             }
 
-            // Draw Selected Frame Overlays
+            // 3. Render Outer Decorative Frame
             drawFrameOverlay();
 
-            // Render Layered User Elements (Text, Stickers, Shapes)
+            // 4. Render Active User Elements (Text, Stickers, SVG)
             elements.forEach((el, index) => {
                 ctx.save();
                 ctx.translate(el.x, el.y);
@@ -408,17 +777,14 @@
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
 
-                    // Stroke
                     if (el.strokeColor) {
                         ctx.strokeStyle = el.strokeColor;
                         ctx.lineWidth = Math.max(2, el.fontSize / 10);
                         ctx.strokeText(el.text, 0, 0);
                     }
-                    // Fill
                     ctx.fillStyle = el.color;
                     ctx.fillText(el.text, 0, 0);
 
-                    // Compute Bounding Box for Interaction
                     const metrics = ctx.measureText(el.text);
                     el.width = metrics.width + 20;
                     el.height = el.fontSize * 1.2;
@@ -431,313 +797,439 @@
                     el.width = el.size;
                     el.height = el.size;
 
-                } else if (el.type === 'shape') {
-                    ctx.fillStyle = el.color;
-                    if (el.shapeType === 'circle') {
-                        ctx.beginPath();
-                        ctx.arc(0, 0, el.size / 2, 0, Math.PI * 2);
-                        ctx.fill();
-                    } else if (el.shapeType === 'rect') {
-                        ctx.fillRect(-el.size / 2, -el.size / 2, el.size, el.size);
-                    } else if (el.shapeType === 'star') {
-                        drawStar(ctx, 0, 0, 5, el.size / 2, el.size / 4);
-                    }
-                    el.width = el.size;
-                    el.height = el.size;
+                } else if (el.type === 'image' && el.imgObj) {
+                    ctx.drawImage(el.imgObj, -el.width / 2, -el.height / 2, el.width, el.height);
                 }
 
-                // Render Active Selection Boundary Box & Drag Handle
+                // Selection Box & Control Handles
                 if (index === activeElementIndex) {
                     ctx.strokeStyle = '#ec4899';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(-el.width / 2 - 5, -el.height / 2 - 5, el.width + 10, el.height + 10);
+                    ctx.lineWidth = 2.5;
+                    ctx.setLineDash([6, 4]);
+                    ctx.strokeRect(-el.width / 2 - 8, -el.height / 2 - 8, el.width + 16, el.height + 16);
+                    ctx.setLineDash([]);
 
-                    // Scale Handle (Bottom Right)
+                    // Resize Handle
                     ctx.fillStyle = '#ec4899';
                     ctx.beginPath();
-                    ctx.arc(el.width / 2 + 5, el.height / 2 + 5, 8, 0, Math.PI * 2);
+                    ctx.arc(el.width / 2 + 8, el.height / 2 + 8, 9, 0, Math.PI * 2);
                     ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Rotate Handle
+                    const rotY = -el.height / 2 - 28;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -el.height / 2 - 8);
+                    ctx.lineTo(0, rotY);
+                    ctx.strokeStyle = '#ec4899';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.beginPath();
+                    ctx.arc(0, rotY, 9, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
                 }
 
                 ctx.restore();
             });
 
-            // Toggle Selected Element Floating Toolbar Visibility
-            if (activeElementIndex >= 0) {
-                selectedElementToolbar.classList.remove('hidden');
-            } else {
-                selectedElementToolbar.classList.add('hidden');
-            }
+            updateToolbarState();
         }
 
-        // Fit & Draw Background Photo smoothly into Canvas
-        function drawCoverImage(img) {
+        // Render Photobooth 2x6 Strip Layout (3 Actions)
+        function renderPhotoboothStrip() {
+            const padding = 30;
+            const availableW = canvas.width - (padding * 2);
+            const shotH = 430;
+            const startY = 50;
+            const gap = 30;
+
+            // Draw Background Strip Box according to Theme
+            ctx.save();
+            if (stripTheme === 'pastel') {
+                ctx.fillStyle = '#fce7f3'; // Soft Pink
+            } else if (stripTheme === 'dark') {
+                ctx.fillStyle = '#020617'; // Dark Slate
+            } else if (stripTheme === 'neon') {
+                ctx.fillStyle = '#090d16'; // Deep Cyber Dark
+            } else if (stripTheme === 'retro') {
+                ctx.fillStyle = '#fef3c7'; // Retro Cream
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Theme Borders / Accents
+            if (stripTheme === 'neon') {
+                ctx.strokeStyle = '#ec4899';
+                ctx.lineWidth = 8;
+                ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+            }
+            ctx.restore();
+
+            // Render 3 Photo Frames
+            for (let i = 0; i < 3; i++) {
+                const boxX = padding;
+                const boxY = startY + i * (shotH + gap);
+
+                // Frame Background Box
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(boxX - 6, boxY - 6, availableW + 12, shotH + 12);
+
+                if (photoboothShots[i]) {
+                    drawProcessedImageToRect(photoboothShots[i], boxX, boxY, availableW, shotH);
+                } else if (bgImage) {
+                    drawProcessedImageToRect(bgImage, boxX, boxY, availableW, shotH);
+                } else {
+                    // Empty Placeholder
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(boxX, boxY, availableW, shotH);
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = 'bold 20px Prompt';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`ACTION SHOT #${i + 1}`, boxX + availableW / 2, boxY + shotH / 2);
+                }
+            }
+
+            // Photobooth Header / Footer Branding Stamp
+            ctx.save();
+            ctx.fillStyle = stripTheme === 'dark' || stripTheme === 'neon' ? '#ffffff' : '#1e293b';
+            ctx.font = 'bold 22px "Chakra Petch", Prompt';
+            ctx.textAlign = 'center';
+            ctx.fillText('PHOTOBOOTH STUDIO ★ 3-ACTION', canvas.width / 2, canvas.height - 70);
+            ctx.font = '13px Prompt';
+            ctx.fillText(new Date().toLocaleDateString('th-TH'), canvas.width / 2, canvas.height - 45);
+            ctx.restore();
+        }
+
+        // Apply Art Filter Styles and Render Photo into Specified Rectangle
+        function drawProcessedImageToRect(img, x, y, width, height) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tCtx = tempCanvas.getContext('2d');
+
+            // Aspect Ratio Cover Fill Calculations
             const imgRatio = img.width / img.height;
-            const canvasRatio = canvas.width / canvas.height;
+            const rectRatio = width / height;
             let renderW, renderH, offsetX, offsetY;
 
-            if (imgRatio > canvasRatio) {
-                renderH = canvas.height;
-                renderW = img.width * (canvas.height / img.height);
-                offsetX = (canvas.width - renderW) / 2;
+            if (imgRatio > rectRatio) {
+                renderH = height;
+                renderW = img.width * (height / img.height);
+                offsetX = (width - renderW) / 2;
                 offsetY = 0;
             } else {
-                renderW = canvas.width;
-                renderH = img.height * (canvas.width / img.width);
+                renderW = width;
+                renderH = img.height * (width / img.width);
                 offsetX = 0;
-                offsetY = (canvas.height - renderH) / 2;
+                offsetY = (height - renderH) / 2;
             }
 
-            ctx.drawImage(img, offsetX, offsetY, renderW, renderH);
+            // Apply Beauty Smooth Blur + Color Adjustments
+            let blurPx = (skinSmoothVal / 100) * 4;
+            tCtx.filter = `brightness(${brightnessVal}%) contrast(${contrastVal}%) saturate(${saturationVal}%) blur(${blurPx}px)`;
+            tCtx.drawImage(img, offsetX, offsetY, renderW, renderH);
+            tCtx.filter = 'none';
+
+            // Filter Effects Logic
+            if (selectedArtFilter === 'bw') {
+                // Classic B&W Filter
+                const imgData = tCtx.getImageData(0, 0, width, height);
+                const d = imgData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    const avg = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
+                    d[i] = avg; d[i + 1] = avg; d[i + 2] = avg;
+                }
+                tCtx.putImageData(imgData, 0, 0);
+
+            } else if (selectedArtFilter === 'popart') {
+                // Pop Art High Contrast Magenta/Cyan Overlay
+                const imgData = tCtx.getImageData(0, 0, width, height);
+                const d = imgData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    d[i] = d[i] > 128 ? 255 : 236; // Bright Red/Pink Shift
+                    d[i+1] = d[i+1] > 128 ? 220 : 72;
+                    d[i+2] = d[i+2] > 128 ? 255 : 153;
+                }
+                tCtx.putImageData(imgData, 0, 0);
+
+            } else if (selectedArtFilter === 'cartoon' || selectedArtFilter === 'sticker') {
+                // Comic Posterization Filter
+                const imgData = tCtx.getImageData(0, 0, width, height);
+                const d = imgData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    d[i] = Math.floor(d[i] / 64) * 64;
+                    d[i+1] = Math.floor(d[i+1] / 64) * 64;
+                    d[i+2] = Math.floor(d[i+2] / 64) * 64;
+                }
+                tCtx.putImageData(imgData, 0, 0);
+
+                if (selectedArtFilter === 'sticker') {
+                    ctx.save();
+                    ctx.shadowColor = '#ffffff';
+                    ctx.shadowBlur = 25;
+                    ctx.drawImage(tempCanvas, x, y);
+                    ctx.restore();
+                    return;
+                }
+
+            } else if (selectedArtFilter === 'cyberpunk') {
+                tCtx.fillStyle = 'rgba(236, 72, 153, 0.25)';
+                tCtx.fillRect(0, 0, width, height);
+            }
+
+            ctx.drawImage(tempCanvas, x, y);
         }
 
-        // Draw Selected Frame Style
+        // Draw Frame Overlays
         function drawFrameOverlay() {
             const w = canvas.width;
             const h = canvas.height;
 
             if (selectedFrame === 'classic') {
-                ctx.strokeStyle = '#f59e0b'; // Gold border
-                ctx.lineWidth = 30;
-                ctx.strokeRect(15, 15, w - 30, h - 30);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 20;
+                ctx.strokeRect(10, 10, w - 20, h - 20);
                 ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 6;
-                ctx.strokeRect(33, 33, w - 66, h - 66);
-
-            } else if (selectedFrame === 'polaroid') {
-                const borderBottom = h * 0.18;
-                const borderSides = w * 0.05;
-
-                ctx.fillStyle = '#ffffff';
-                // Top, Left, Right, Bottom polaroid border
-                ctx.fillRect(0, 0, w, borderSides);
-                ctx.fillRect(0, 0, borderSides, h);
-                ctx.fillRect(w - borderSides, 0, borderSides, h);
-                ctx.fillRect(0, h - borderBottom, w, borderBottom);
+                ctx.lineWidth = 4;
+                ctx.strokeRect(22, 22, w - 44, h - 44);
 
             } else if (selectedFrame === 'neon') {
+                const pulse = Math.sin(animTime * 3) * 8 + 12;
                 ctx.strokeStyle = '#ec4899';
                 ctx.shadowColor = '#ec4899';
-                ctx.shadowBlur = 20;
-                ctx.lineWidth = 16;
-                ctx.strokeRect(20, 20, w - 40, h - 40);
+                ctx.shadowBlur = pulse;
+                ctx.lineWidth = 12;
+                ctx.strokeRect(15, 15, w - 30, h - 30);
 
                 ctx.strokeStyle = '#22d3ee';
                 ctx.shadowColor = '#22d3ee';
-                ctx.shadowBlur = 15;
-                ctx.lineWidth = 8;
-                ctx.strokeRect(35, 35, w - 70, h - 70);
-                
-                // Reset shadow blur
+                ctx.shadowBlur = pulse * 0.8;
+                ctx.lineWidth = 6;
+                ctx.strokeRect(25, 25, w - 50, h - 50);
                 ctx.shadowBlur = 0;
+            }
 
-            } else if (selectedFrame === 'cute') {
-                ctx.strokeStyle = '#f472b6';
-                ctx.lineWidth = 16;
-                ctx.setLineDash([25, 15]);
-                ctx.strokeRect(20, 20, w - 40, h - 40);
-                ctx.setLineDash([]); // Reset dash
-
-            } else if (selectedFrame === 'vignette') {
-                const gradient = ctx.createRadialGradient(w/2, h/2, Math.min(w,h)*0.3, w/2, h/2, Math.min(w,h)*0.7);
-                gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-                gradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, w, h);
+            if (customFrameImage) {
+                ctx.drawImage(customFrameImage, 0, 0, w, h);
             }
         }
 
-        // Helper: Draw Star Shape
-        function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
-            let rot = Math.PI / 2 * 3;
-            let x = cx;
-            let y = cy;
-            let step = Math.PI / spikes;
-
-            ctx.beginPath();
-            ctx.moveTo(cx, cy - outerRadius);
-            for (let i = 0; i < spikes; i++) {
-                x = cx + Math.cos(rot) * outerRadius;
-                y = cy + Math.sin(rot) * outerRadius;
-                ctx.lineTo(x, y);
-                rot += step;
-
-                x = cx + Math.cos(rot) * innerRadius;
-                y = cy + Math.sin(rot) * innerRadius;
-                ctx.lineTo(x, y);
-                rot += step;
-            }
-            ctx.lineTo(cx, cy - outerRadius);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        // Convert screen event coordinates to Canvas coordinates
         function getCanvasCoords(e) {
             const rect = canvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-
             return {
-                x: (clientX - rect.left) * scaleX,
-                y: (clientY - rect.top) * scaleY
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
             };
         }
 
-        // Check if point hits active element's resize handle
-        function hitTestResizeHandle(el, x, y) {
-            const handleX = el.x + el.width / 2 + 5;
-            const handleY = el.y + el.height / 2 + 5;
-            const dist = Math.hypot(x - handleX, y - handleY);
-            return dist <= 20;
-        }
-
-        // Check if point hits an element
-        function hitTestElement(el, x, y) {
-            const halfW = el.width / 2;
-            const halfH = el.height / 2;
-            return x >= el.x - halfW && x <= el.x + halfW && y >= el.y - halfH && y <= el.y + halfH;
-        }
-
-        // Drag & Resize Mouse/Touch Listeners
         function handleStart(e) {
             const coords = getCanvasCoords(e);
-            
-            // First check resize handle of currently selected item
+
             if (activeElementIndex >= 0) {
                 const el = elements[activeElementIndex];
-                if (hitTestResizeHandle(el, coords.x, coords.y)) {
+                const rad = (el.rotation || 0) * Math.PI / 180;
+                
+                const cos = Math.cos(rad);
+                const sin = Math.sin(rad);
+
+                const resLocalX = el.width / 2 + 8;
+                const resLocalY = el.height / 2 + 8;
+                const resWorldX = el.x + (resLocalX * cos - resLocalY * sin);
+                const resWorldY = el.y + (resLocalX * sin + resLocalY * cos);
+
+                if (Math.hypot(coords.x - resWorldX, coords.y - resWorldY) <= 25) {
                     isResizing = true;
                     dragStartX = coords.x;
                     dragStartY = coords.y;
                     return;
                 }
+
+                const rotLocalY = -el.height / 2 - 28;
+                const rotWorldX = el.x + (-rotLocalY * sin);
+                const rotWorldY = el.y + (rotLocalY * cos);
+
+                if (Math.hypot(coords.x - rotWorldX, coords.y - rotWorldY) <= 25) {
+                    isRotating = true;
+                    return;
+                }
             }
 
-            // Check element selection top-down
             let clickedIndex = -1;
             for (let i = elements.length - 1; i >= 0; i--) {
-                if (hitTestElement(elements[i], coords.x, coords.y)) {
+                const el = elements[i];
+                const dx = coords.x - el.x;
+                const dy = coords.y - el.y;
+                const rad = -(el.rotation || 0) * Math.PI / 180;
+                
+                const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
+                const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
+
+                if (localX >= -el.width / 2 - 5 && localX <= el.width / 2 + 5 &&
+                    localY >= -el.height / 2 - 5 && localY <= el.height / 2 + 5) {
                     clickedIndex = i;
                     break;
                 }
             }
 
             activeElementIndex = clickedIndex;
-
             if (activeElementIndex >= 0) {
                 isDragging = true;
                 dragStartX = coords.x - elements[activeElementIndex].x;
                 dragStartY = coords.y - elements[activeElementIndex].y;
             }
-
-            renderCanvas();
         }
 
         function handleMove(e) {
-            if (!isDragging && !isResizing) return;
+            if (!isDragging && !isResizing && !isRotating) return;
             const coords = getCanvasCoords(e);
 
-            if (isDragging && activeElementIndex >= 0) {
-                elements[activeElementIndex].x = coords.x - dragStartX;
-                elements[activeElementIndex].y = coords.y - dragStartY;
-                renderCanvas();
-            } else if (isResizing && activeElementIndex >= 0) {
+            if (activeElementIndex >= 0) {
                 const el = elements[activeElementIndex];
-                const dx = coords.x - dragStartX;
-                
-                if (el.type === 'text') {
-                    el.fontSize = Math.max(12, el.fontSize + dx * 0.2);
-                } else if (el.type === 'emoji' || el.type === 'shape') {
-                    el.size = Math.max(15, el.size + dx * 0.2);
+
+                if (isDragging) {
+                    el.x = coords.x - dragStartX;
+                    el.y = coords.y - dragStartY;
+                } else if (isResizing) {
+                    const dx = coords.x - dragStartX;
+                    if (el.type === 'text') {
+                        el.fontSize = Math.max(12, el.fontSize + dx * 0.25);
+                    } else if (el.type === 'emoji') {
+                        el.size = Math.max(15, el.size + dx * 0.25);
+                    } else if (el.type === 'image') {
+                        const ratio = el.height / el.width;
+                        el.width = Math.max(20, el.width + dx * 0.25);
+                        el.height = el.width * ratio;
+                    }
+                    dragStartX = coords.x;
+                    dragStartY = coords.y;
+                } else if (isRotating) {
+                    const rad = Math.atan2(coords.y - el.y, coords.x - el.x);
+                    let deg = Math.round(rad * (180 / Math.PI) + 90);
+                    if (deg > 180) deg -= 360;
+                    el.rotation = deg;
                 }
-                dragStartX = coords.x;
-                dragStartY = coords.y;
-                renderCanvas();
             }
         }
 
-        function handleEnd() {
-            isDragging = false;
-            isResizing = false;
-        }
+        function handleEnd() { isDragging = false; isResizing = false; isRotating = false; }
 
         canvas.addEventListener('mousedown', handleStart);
         canvas.addEventListener('mousemove', handleMove);
         window.addEventListener('mouseup', handleEnd);
-
         canvas.addEventListener('touchstart', handleStart, { passive: true });
         canvas.addEventListener('touchmove', handleMove, { passive: true });
-        window.addEventListener('touchend', handleEnd);
+        // Helper to grab frame from video with accurate selected crop aspect ratio
+        function captureCameraFrame() {
+            const vidW = cameraFeed.videoWidth || 1280;
+            const vidH = cameraFeed.videoHeight || 720;
 
-        // Camera Functionality
-        btnStartCamera.addEventListener('click', async () => {
-            try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-                cameraFeed.srcObject = mediaStream;
-                cameraFeed.classList.remove('hidden');
-                cameraPlaceholder.classList.add('hidden');
-                btnStartCamera.classList.add('hidden');
-                btnCapture.classList.remove('hidden');
-                btnStopCamera.classList.remove('hidden');
-            } catch (err) {
-                alert('ไม่สามารถเปิดใช้งานกล้องได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงกล้อง');
+            let targetW = vidW;
+            let targetH = vidH;
+
+            // Calculate Target Cropped Aspect Ratio
+            let targetRatio = 3 / 4;
+            if (captureAspectRatio === '1:1') targetRatio = 1;
+            else if (captureAspectRatio === '9:16') targetRatio = 9 / 16;
+            else if (captureAspectRatio === '16:9') targetRatio = 16 / 9;
+
+            let cropW = vidW;
+            let cropH = vidH;
+            let cropX = 0;
+            let cropY = 0;
+
+            if (vidW / vidH > targetRatio) {
+                cropW = vidH * targetRatio;
+                cropX = (vidW - cropW) / 2;
+            } else {
+                cropH = vidW / targetRatio;
+                cropY = (vidH - cropH) / 2;
             }
-        });
 
-        btnStopCamera.addEventListener('click', stopCamera);
-
-        function stopCamera() {
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(track => track.stop());
-                mediaStream = null;
-            }
-            cameraFeed.classList.add('hidden');
-            cameraPlaceholder.classList.remove('hidden');
-            btnStartCamera.classList.remove('hidden');
-            btnCapture.classList.add('hidden');
-            btnStopCamera.classList.add('hidden');
-        }
-
-        btnCapture.addEventListener('click', () => {
-            if (!cameraFeed.srcObject) return;
-            
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = cameraFeed.videoWidth || 1280;
-            tempCanvas.height = cameraFeed.videoHeight || 720;
+            tempCanvas.width = cropW;
+            tempCanvas.height = cropH;
             const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(cameraFeed, 0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Draw cropped frame
+            tempCtx.drawImage(cameraFeed, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
             const img = new Image();
-            img.onload = () => {
-                bgImage = img;
-                renderCanvas();
-                stopCamera();
-            };
             img.src = tempCanvas.toDataURL('image/png');
+            return img;
+        }
+
+        // Single Snap
+        btnCapture.addEventListener('click', () => {
+            const img = captureCameraFrame();
+            img.onload = () => { bgImage = img; };
         });
 
-        // Image File Upload
+        // Auto 3-Action Photobooth Capture Sequence
+        btnSnap3Actions.addEventListener('click', async () => {
+            photoboothShots = [];
+            countdownOverlay.classList.remove('hidden');
+
+            for (let shotIndex = 0; shotIndex < 3; shotIndex++) {
+                countdownStatus.textContent = `กำลังเตรียมถ่ายรูปที่ ${shotIndex + 1}/3`;
+
+                // Countdown 3, 2, 1
+                for (let count = 3; count > 0; count--) {
+                    countdownNumber.textContent = count;
+                    await new Promise(resolve => setTimeout(resolve, 900));
+                }
+
+                // Snap Photo Shot
+                const img = captureCameraFrame();
+                await new Promise(resolve => {
+                    img.onload = resolve;
+                });
+                photoboothShots.push(img);
+
+                // Flash animation feedback
+                countdownNumber.textContent = "📸 SMILE!";
+                await new Promise(resolve => setTimeout(resolve, 600));
+            }
+
+            countdownOverlay.classList.add('hidden');
+        });
+
+        // File Upload Handlers
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = (evt) => {
                 const img = new Image();
-                img.onload = () => {
-                    bgImage = img;
-                    renderCanvas();
+                img.onload = () => { 
+                    bgImage = img; 
+                    photoboothShots = [img, img, img];
                 };
-                img.src = event.target.result;
+                img.src = evt.target.result;
             };
             reader.readAsDataURL(file);
         });
 
-        // Tab Navigation Logic
+        frameFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => { customFrameImage = img; };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Tab Switchers
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => {
@@ -748,141 +1240,34 @@
 
                 btn.classList.add('active', 'text-pink-400', 'border-pink-500');
                 btn.classList.remove('text-slate-400', 'border-transparent');
-                
-                const tabId = btn.getAttribute('data-tab');
-                document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+                document.getElementById(`tab-${btn.getAttribute('data-tab')}`).classList.remove('hidden');
             });
         });
 
-        // Add Text Element
-        document.getElementById('btnAddText').addEventListener('click', () => {
-            const textInput = document.getElementById('textInput');
-            const text = textInput.value.trim() || 'ข้อความของคุณ';
-            
-            elements.push({
-                type: 'text',
-                text: text,
-                x: canvas.width / 2,
-                y: canvas.height / 2,
-                fontSize: parseInt(document.getElementById('textSizeInput').value),
-                fontFamily: document.getElementById('fontFamilySelect').value,
-                color: document.getElementById('textColorInput').value,
-                strokeColor: document.getElementById('textStrokeColorInput').value,
-                width: 100,
-                height: 40
-            });
-
-            activeElementIndex = elements.length - 1;
-            textInput.value = '';
-            renderCanvas();
-        });
-
-        // Realtime Text Controls Updates
-        document.getElementById('textSizeInput').addEventListener('input', (e) => {
-            document.getElementById('textSizeVal').textContent = `${e.target.value}px`;
-            if (activeElementIndex >= 0 && elements[activeElementIndex].type === 'text') {
-                elements[activeElementIndex].fontSize = parseInt(e.target.value);
-                renderCanvas();
-            }
-        });
-
-        document.getElementById('textColorInput').addEventListener('input', (e) => {
-            if (activeElementIndex >= 0 && elements[activeElementIndex].type === 'text') {
-                elements[activeElementIndex].color = e.target.value;
-                renderCanvas();
-            }
-        });
-
-        document.getElementById('textStrokeColorInput').addEventListener('input', (e) => {
-            if (activeElementIndex >= 0 && elements[activeElementIndex].type === 'text') {
-                elements[activeElementIndex].strokeColor = e.target.value;
-                renderCanvas();
-            }
-        });
-
-        document.getElementById('fontFamilySelect').addEventListener('change', (e) => {
-            if (activeElementIndex >= 0 && elements[activeElementIndex].type === 'text') {
-                elements[activeElementIndex].fontFamily = e.target.value;
-                renderCanvas();
-            }
-        });
-
-        // Add Emoji Stickers
-        document.querySelectorAll('.sticker-btn').forEach(btn => {
+        // Photobooth Strip Theme Selection
+        document.querySelectorAll('.theme-option').forEach(btn => {
             btn.addEventListener('click', () => {
-                const emoji = btn.getAttribute('data-emoji');
-                elements.push({
-                    type: 'emoji',
-                    emoji: emoji,
-                    x: canvas.width / 2,
-                    y: canvas.height / 2,
-                    size: 80,
-                    width: 80,
-                    height: 80
-                });
-                activeElementIndex = elements.length - 1;
-                renderCanvas();
+                document.querySelectorAll('.theme-option').forEach(b => b.classList.remove('border-pink-500'));
+                btn.classList.add('border-pink-500');
+                stripTheme = btn.getAttribute('data-theme');
             });
         });
 
-        // Add Shape Elements
-        document.getElementById('btnAddShapeCircle').addEventListener('click', () => {
-            elements.push({
-                type: 'shape',
-                shapeType: 'circle',
-                color: '#ec4899',
-                x: canvas.width / 2,
-                y: canvas.height / 2,
-                size: 100,
-                width: 100,
-                height: 100
+        // Art Filters Selection
+        document.querySelectorAll('.art-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.art-filter-btn').forEach(b => b.classList.remove('border-pink-500'));
+                btn.classList.add('border-pink-500');
+                selectedArtFilter = btn.getAttribute('data-art');
             });
-            activeElementIndex = elements.length - 1;
-            renderCanvas();
         });
 
-        document.getElementById('btnAddShapeRect').addEventListener('click', () => {
-            elements.push({
-                type: 'shape',
-                shapeType: 'rect',
-                color: '#6366f1',
-                x: canvas.width / 2,
-                y: canvas.height / 2,
-                size: 100,
-                width: 100,
-                height: 100
-            });
-            activeElementIndex = elements.length - 1;
-            renderCanvas();
-        });
-
-        document.getElementById('btnAddShapeStar').addEventListener('click', () => {
-            elements.push({
-                type: 'shape',
-                shapeType: 'star',
-                color: '#f59e0b',
-                x: canvas.width / 2,
-                y: canvas.height / 2,
-                size: 110,
-                width: 110,
-                height: 110
-            });
-            activeElementIndex = elements.length - 1;
-            renderCanvas();
-        });
-
-        // Frames Option Select
+        // Frame Options
         document.querySelectorAll('.frame-option').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.frame-option').forEach(b => {
-                    b.classList.remove('border-pink-500');
-                    b.classList.add('border-slate-800');
-                });
-                btn.classList.remove('border-slate-800');
+                document.querySelectorAll('.frame-option').forEach(b => b.classList.remove('border-pink-500'));
                 btn.classList.add('border-pink-500');
-                
                 selectedFrame = btn.getAttribute('data-frame');
-                renderCanvas();
             });
         });
 
@@ -890,82 +1275,192 @@
         document.querySelectorAll('.ratio-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.ratio-btn').forEach(b => {
-                    b.classList.remove('border-pink-500', 'text-pink-400');
+                    b.classList.remove('border-pink-500', 'text-pink-400', 'border-2');
                     b.classList.add('border-slate-800', 'text-slate-300');
                 });
-                btn.classList.remove('border-slate-800', 'text-slate-300');
-                btn.classList.add('border-pink-500', 'text-pink-400');
-
-                const ratio = btn.getAttribute('data-ratio');
-                if (ratio === '1:1') {
-                    canvasWidth = 1080;
-                    canvasHeight = 1080;
-                } else if (ratio === '4:3') {
-                    canvasWidth = 1200;
-                    canvasHeight = 900;
-                } else if (ratio === '9:16') {
-                    canvasWidth = 1080;
-                    canvasHeight = 1920;
-                }
+                btn.classList.add('border-pink-500', 'text-pink-400', 'border-2');
+                
+                currentRatio = btn.getAttribute('data-ratio');
+                if (currentRatio === '2:6') { canvasWidth = 600; canvasHeight = 1800; }
+                else if (currentRatio === '1:1') { canvasWidth = 1080; canvasHeight = 1080; }
+                else if (currentRatio === '4:3') { canvasWidth = 1200; canvasHeight = 900; }
+                else if (currentRatio === '9:16') { canvasWidth = 1080; canvasHeight = 1920; }
                 initCanvas();
             });
         });
 
-        // Background Color Input
-        document.getElementById('bgColorInput').addEventListener('input', (e) => {
-            backgroundColor = e.target.value;
-            renderCanvas();
+        // Beauty Adjustments Sliders
+        document.getElementById('sliderSkinSmooth').addEventListener('input', (e) => {
+            skinSmoothVal = e.target.value;
+            document.getElementById('valSkinSmooth').textContent = `${skinSmoothVal}%`;
+        });
+        document.getElementById('sliderBrightness').addEventListener('input', (e) => {
+            brightnessVal = e.target.value;
+            document.getElementById('valBrightness').textContent = `${brightnessVal}%`;
+        });
+        document.getElementById('sliderContrast').addEventListener('input', (e) => {
+            contrastVal = e.target.value;
+            document.getElementById('valContrast').textContent = `${contrastVal}%`;
+        });
+        document.getElementById('sliderSaturation').addEventListener('input', (e) => {
+            saturationVal = e.target.value;
+            document.getElementById('valSaturation').textContent = `${saturationVal}%`;
         });
 
-        // Delete & Layer Order Toolbar Controls
-        btnDeleteSelected.addEventListener('click', () => {
+        // Text & Sticker Adders
+        document.getElementById('btnAddText').addEventListener('click', () => {
+            const text = document.getElementById('textInput').value.trim() || 'PHOTO BOOTH';
+            elements.push({
+                type: 'text', text: text,
+                x: canvas.width / 2, y: canvas.height - 120,
+                fontSize: 40, rotation: 0,
+                fontFamily: document.getElementById('fontFamilySelect').value,
+                color: document.getElementById('textColorInput').value,
+                strokeColor: document.getElementById('textStrokeColorInput').value,
+                width: 100, height: 40
+            });
+            activeElementIndex = elements.length - 1;
+            document.getElementById('textInput').value = '';
+        });
+
+        document.querySelectorAll('.sticker-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.push({
+                    type: 'emoji', emoji: btn.getAttribute('data-emoji'),
+                    x: canvas.width / 2, y: canvas.height / 2,
+                    size: 80, rotation: 0, width: 80, height: 80
+                });
+                activeElementIndex = elements.length - 1;
+            });
+        });
+
+        document.querySelectorAll('.preset-gfx-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.getAttribute('data-type');
+                let svgUrl = '';
+                if (type === 'cat') svgUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🐱</text></svg>';
+                else if (type === 'glasses') svgUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🕶️</text></svg>';
+                else if (type === 'sparkles') svgUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">✨</text></svg>';
+
+                const img = new Image();
+                img.onload = () => {
+                    elements.push({
+                        type: 'image', imgObj: img,
+                        x: canvas.width / 2, y: canvas.height / 2,
+                        baseWidth: 120, baseHeight: 120,
+                        width: 120, height: 120, rotation: 0
+                    });
+                    activeElementIndex = elements.length - 1;
+                };
+                img.src = svgUrl;
+            });
+        });
+
+        // Layer & Delete Actions
+        document.getElementById('btnDeleteSelected').addEventListener('click', () => {
             if (activeElementIndex >= 0) {
                 elements.splice(activeElementIndex, 1);
                 activeElementIndex = -1;
-                renderCanvas();
             }
         });
 
-        btnBringForward.addEventListener('click', () => {
+        document.getElementById('btnBringForward').addEventListener('click', () => {
             if (activeElementIndex >= 0 && activeElementIndex < elements.length - 1) {
                 const item = elements.splice(activeElementIndex, 1)[0];
                 elements.push(item);
                 activeElementIndex = elements.length - 1;
-                renderCanvas();
             }
         });
 
-        // Reset Canvas
+        document.getElementById('btnSendBackward').addEventListener('click', () => {
+            if (activeElementIndex > 0) {
+                const item = elements.splice(activeElementIndex, 1)[0];
+                elements.splice(activeElementIndex - 1, 0, item);
+                activeElementIndex--;
+            }
+        });
+
+        sliderElementScale.addEventListener('input', (e) => {
+            if (activeElementIndex < 0) return;
+            const scalePct = parseFloat(e.target.value) / 100;
+            const el = elements[activeElementIndex];
+
+            if (el.type === 'text') el.fontSize = 45 * scalePct;
+            else if (el.type === 'emoji') el.size = 80 * scalePct;
+            else if (el.type === 'image') {
+                el.width = (el.baseWidth || 120) * scalePct;
+                el.height = (el.baseHeight || 120) * scalePct;
+            }
+        });
+
+        sliderElementRotate.addEventListener('input', (e) => {
+            if (activeElementIndex < 0) return;
+            elements[activeElementIndex].rotation = parseInt(e.target.value);
+        });
+
+        // Reset
         document.getElementById('btnResetCanvas').addEventListener('click', () => {
             bgImage = null;
+            photoboothShots = [];
+            customFrameImage = null;
             elements = [];
             activeElementIndex = -1;
             selectedFrame = 'none';
-            renderCanvas();
+            selectedArtFilter = 'normal';
         });
 
-        // Download Final Image
+        // Download Image
         document.getElementById('btnDownload').addEventListener('click', () => {
-            // Unselect element before saving to remove bounding boxes
-            const prevActiveIndex = activeElementIndex;
+            const prevIndex = activeElementIndex;
             activeElementIndex = -1;
             renderCanvas();
 
-            // Create download link
             const link = document.createElement('a');
-            link.download = `photo-studio-${Date.now()}.png`;
+            link.download = `photobooth-${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png', 1.0);
             link.click();
 
-            // Restore selection state
-            activeElementIndex = prevActiveIndex;
-            renderCanvas();
+            activeElementIndex = prevIndex;
         });
 
-        // Startup Initialization
-        window.onload = () => {
-            initCanvas();
-        };
+        // Record Video
+        document.getElementById('btnRecordVideo').addEventListener('click', () => {
+            if (!window.MediaRecorder) {
+                alert('เบราว์เซอร์ของคุณไม่รองรับการบันทึกวิดีโอ');
+                return;
+            }
+
+            const recBtnText = document.getElementById('recBtnText');
+            recBtnText.textContent = 'กำลังบันทึก (5s)...';
+            
+            const prevIndex = activeElementIndex;
+            activeElementIndex = -1;
+
+            const stream = canvas.captureStream(30);
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            const chunks = [];
+
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `studio-video-${Date.now()}.webm`;
+                a.click();
+                recBtnText.textContent = i18n[currentLang].btnRecord;
+                activeElementIndex = prevIndex;
+            };
+
+            recorder.start();
+            setTimeout(() => recorder.stop(), 5000);
+        });
+
+        document.getElementById('bgColorInput').addEventListener('input', (e) => {
+            backgroundColor = e.target.value;
+        });
+
+        window.onload = () => { initCanvas(); };
     </script>
 </body>
 </html>
