@@ -1459,7 +1459,52 @@
         document.getElementById('bgColorInput').addEventListener('input', (e) => {
             backgroundColor = e.target.value;
         });
+// Start Camera
+btnStartCamera.addEventListener('click', async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('เบราว์เซอร์นี้ไม่รองรับกล้อง หรือหน้าเว็บไม่ได้เปิดผ่าน HTTPS/localhost');
+        return;
+    }
+    try {
+        if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
 
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false
+        });
+
+        cameraFeed.srcObject = mediaStream;
+        await cameraFeed.play();
+
+        cameraFeed.classList.remove('hidden');
+        cameraPlaceholder.classList.add('hidden');
+        btnStopCamera.classList.remove('hidden');
+        btnCapture.classList.remove('hidden');
+        btnSnap3Actions.classList.remove('hidden');
+    } catch (err) {
+        console.error(err);
+        let msg = 'ไม่สามารถเปิดกล้องได้: ' + err.message;
+        if (err.name === 'NotAllowedError') msg = 'กรุณาอนุญาตการเข้าถึงกล้องในเบราว์เซอร์';
+        if (err.name === 'NotFoundError') msg = 'ไม่พบกล้องในอุปกรณ์นี้';
+        if (err.name === 'NotReadableError') msg = 'กล้องถูกใช้งานโดยแอปอื่นอยู่';
+        alert(msg);
+    }
+});
+
+// Stop Camera
+function stopCamera() {
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
+    }
+    cameraFeed.srcObject = null;
+    cameraFeed.classList.add('hidden');
+    cameraPlaceholder.classList.remove('hidden');
+    btnStopCamera.classList.add('hidden');
+    btnCapture.classList.add('hidden');
+    btnSnap3Actions.classList.add('hidden');
+}
+btnStopCamera.addEventListener('click', stopCamera);
         window.onload = () => { initCanvas(); };
     </script>
 </body>
