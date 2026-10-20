@@ -1126,6 +1126,7 @@
         window.addEventListener('mouseup', handleEnd);
         canvas.addEventListener('touchstart', handleStart, { passive: true });
         canvas.addEventListener('touchmove', handleMove, { passive: true });
+         canvas.addEventListener('touchend', handleEnd);
         // Helper to grab frame from video with accurate selected crop aspect ratio
         function captureCameraFrame() {
             const vidW = cameraFeed.videoWidth || 1280;
