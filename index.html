@@ -1168,11 +1168,10 @@
         }
 
         // Single Snap
-        btnCapture.addEventListener('click', () => {
-            const img = captureCameraFrame();
-            img.onload = () => { bgImage = img; };
-        });
-
+          btnCapture.addEventListener('click', () => {
+       const img = captureCameraFrame();
+       img.onload = () => { bgImage = img; photoboothShots = []; };
+   });
         // Auto 3-Action Photobooth Capture Sequence
         btnSnap3Actions.addEventListener('click', async () => {
             photoboothShots = [];
